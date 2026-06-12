@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Emailsherlock\EmailGuardBundle\Validator;
 
+use Symfony\Component\Validator\Attribute\HasNamedArguments;
 use Symfony\Component\Validator\Constraint;
 
 /**
@@ -39,6 +40,7 @@ class VerifiedEmail extends Constraint
      * @param list<string>|null $reviewOn verdicts that flag for review; null keeps the bundle defaults
      * @param string[]|null $groups
      */
+    #[HasNamedArguments]
     public function __construct(
         ?array $blockOn = null,
         ?array $reviewOn = null,
@@ -46,7 +48,9 @@ class VerifiedEmail extends Constraint
         ?array $groups = null,
         mixed $payload = null,
     ) {
-        parent::__construct([], $groups, $payload);
+        // Null, not []: passing an options array to the base constructor is
+        // deprecated since symfony/validator 7.3 and fatal in 8.0.
+        parent::__construct(null, $groups, $payload);
 
         $this->blockOn = $blockOn;
         $this->reviewOn = $reviewOn;

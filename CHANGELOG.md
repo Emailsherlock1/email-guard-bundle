@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.1] - 2026-06-13
+
+### Fixed
+
+- VerifiedEmail no longer passes an options array to the base Constraint
+  constructor (deprecated since symfony/validator 7.3, fatal in 8.0);
+  the constructor now carries #[HasNamedArguments].
+
+
 ## [0.1.0] - 2026-06-13
 
 First release, built on email-guard-core 0.1 (email-guard-spec 1.0.0).
