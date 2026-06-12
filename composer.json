@@ -1,0 +1,34 @@
+{
+  "name": "emailsherlock/email-guard-bundle",
+  "description": "Symfony integration for Email-Guard: a VerifiedEmail constraint and a verify_email form option that block disposable and undeliverable addresses at submit time.",
+  "type": "symfony-bundle",
+  "license": "MIT",
+  "keywords": ["email", "email-validation", "email-verification", "disposable", "symfony", "form-validation", "constraint", "emailsherlock"],
+  "homepage": "https://github.com/Emailsherlock1/email-guard-bundle",
+  "authors": [{ "name": "EmailSherlock" }],
+  "require": {
+    "php": ">=8.1",
+    "emailsherlock/email-guard-core": "^0.1",
+    "symfony/config": "^6.4 || ^7.0",
+    "symfony/dependency-injection": "^6.4 || ^7.0",
+    "symfony/http-kernel": "^6.4 || ^7.0",
+    "symfony/validator": "^6.4 || ^7.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5 || ^11.0",
+    "symfony/form": "^6.4 || ^7.0"
+  },
+  "suggest": {
+    "symfony/form": "Enables the 'verify_email' => true form option"
+  },
+  "autoload": {
+    "psr-4": { "Emailsherlock\\EmailGuardBundle\\": "src/" }
+  },
+  "autoload-dev": {
+    "psr-4": { "Emailsherlock\\EmailGuardBundle\\Tests\\": "tests/" }
+  },
+  "scripts": {
+    "test": "phpunit"
+  },
+  "config": { "sort-packages": true }
+}
