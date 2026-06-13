@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Emailsherlock\EmailGuardBundle;
 
 use Emailsherlock\EmailGuard\EmailGuard;
+use Emailsherlock\EmailGuard\GuardReporter;
 use Emailsherlock\EmailGuard\Http\TransportInterface;
 use Emailsherlock\EmailGuard\Local\DisposableSnapshot;
 
@@ -12,6 +13,9 @@ use Emailsherlock\EmailGuard\Local\DisposableSnapshot;
  * Builds EmailGuard instances from the bundle configuration. The default
  * instance is shared; per-constraint block_on/review_on overrides get their
  * own instance because the core guard is immutable by design.
+ *
+ * Every instance shares the one GuardReporter, so a decision recorded through
+ * any of them is in the same queue the kernel.terminate listener flushes.
  */
 final class GuardFactory
 {
@@ -26,6 +30,7 @@ final class GuardFactory
         private readonly array $config,
         private readonly ?TransportInterface $transport = null,
         private readonly ?DisposableSnapshot $snapshot = null,
+        private readonly ?GuardReporter $reporter = null,
     ) {
     }
 
@@ -55,6 +60,6 @@ final class GuardFactory
      */
     private function build(array $config): EmailGuard
     {
-        return new EmailGuard($config, $this->transport, $this->snapshot);
+        return new EmailGuard($config, $this->transport, $this->snapshot, $this->reporter);
     }
 }

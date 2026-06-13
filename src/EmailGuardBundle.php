@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Emailsherlock\EmailGuardBundle;
 
 use Emailsherlock\EmailGuard\EmailGuard;
+use Emailsherlock\EmailGuard\GuardReporter;
+use Emailsherlock\EmailGuardBundle\EventListener\GuardTelemetryFlushListener;
 use Emailsherlock\EmailGuardBundle\Form\VerifyEmailTypeExtension;
 use Emailsherlock\EmailGuardBundle\Validator\VerifiedEmailValidator;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -67,9 +69,26 @@ final class EmailGuardBundle extends AbstractBundle
     {
         $services = $container->services();
 
+        // Decision-telemetry emitter (spec section 11). Key-gated and
+        // fail-silent inside the reporter, so it is harmless without a key.
+        $services->set('email_guard.reporter', GuardReporter::class)
+            ->args([
+                $config['api_key'],
+                $config['base_url'],
+                $config['timeout_ms'],
+                'symfony-bundle',
+            ]);
+        $services->alias(GuardReporter::class, 'email_guard.reporter');
+
         $services->set('email_guard.factory', GuardFactory::class)
-            ->args([$config]);
+            ->args([$config, null, null, service('email_guard.reporter')]);
         $services->alias(GuardFactory::class, 'email_guard.factory');
+
+        // Flush the batched events after the response (kernel.terminate), so a
+        // form submit never waits on the report.
+        $services->set('email_guard.telemetry_flush_listener', GuardTelemetryFlushListener::class)
+            ->args([service('email_guard.reporter')])
+            ->tag('kernel.event_listener', ['event' => 'kernel.terminate']);
 
         $services->set('email_guard.guard', EmailGuard::class)
             ->factory([service('email_guard.factory'), 'create']);
