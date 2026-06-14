@@ -95,7 +95,9 @@ final class EmailGuardBundle extends AbstractBundle
         $services->alias(EmailGuard::class, 'email_guard.guard');
 
         $services->set('email_guard.validator.verified_email', VerifiedEmailValidator::class)
-            ->args([service('email_guard.factory')])
+            // Logger is optional (nullOnInvalid): the deny-log is a convenience
+            // for key-less visibility, never a hard dependency.
+            ->args([service('email_guard.factory'), service('logger')->nullOnInvalid()])
             ->tag('validator.constraint_validator');
 
         if (class_exists(FormType::class)) {

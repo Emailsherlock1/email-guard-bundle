@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.1] - 2026-06-14
+
+### Added
+
+- Key-independent deny logging (EM-1013): `VerifiedEmailValidator` logs every
+  blocked decision via an optional PSR-3 logger (autowired in Symfony) as
+  `email_guard.denied` with domain, verdict, reasons, source. Domain only,
+  never the address. Gives operators visibility into what the local-only
+  guard filters without any API key, credits, or DB.
+
+
 ## [0.2.0] - 2026-06-13
 
 ### Added
