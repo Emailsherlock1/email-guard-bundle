@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2] - 2026-06-14
+
+### Fixed
+
+- `psr/log` moved from require-dev to require: `VerifiedEmailValidator`
+  references `Psr\Log\LoggerInterface` in src, so it is a runtime dependency
+  (in practice always present transitively via symfony/http-kernel, but now
+  declared correctly).
+
+
 ## [0.2.1] - 2026-06-14
 
 ### Added
