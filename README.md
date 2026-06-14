@@ -79,6 +79,38 @@ $result = $this->guard->check($email);
 if ($result->needsReview()) { ... }
 ```
 
+## Reacting to decisions
+
+The bundle dispatches a `GuardDecisionEvent` for every decision (allow,
+deny, review), so you can react however you like: log to your own channel,
+write to your own store, push a metric, fire a webhook. Register a listener:
+
+```php
+use Emailsherlock\EmailGuardBundle\Event\GuardDecisionEvent;
+
+#[AsEventListener]
+final class MyGuardListener
+{
+    public function __invoke(GuardDecisionEvent $event): void
+    {
+        if ($event->result->isDenied()) {
+            // $event->domain  -> the domain part (not personal data)
+            // $event->input   -> the raw address (PII: your responsibility)
+            // $event->result  -> verdict, action, reasons, degraded, ...
+        }
+    }
+}
+```
+
+The bundle ships one default listener that logs denies as
+`email_guard.denied` (domain only, never the address) via PSR-3, so blocks
+are visible even without an API key. It is just one subscriber: to silence
+it, override the `email_guard.event.decision_log_listener` service.
+
+For aggregate analytics across your sites, set an API key instead: the guard
+then reports decisions to your EmailSherlock account (domain only), no
+listener needed.
+
 ## Custom transport
 
 Bind your own `TransportInterface` (e.g. `Psr18Transport` around your HTTP

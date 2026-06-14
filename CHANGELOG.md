@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0] - 2026-06-14
+
+### Added
+
+- `GuardDecisionEvent` (EM-1014): dispatched for every decision (allow, deny,
+  review). Register a listener to handle blocks however you want (own log
+  channel, own store, metrics, webhook). Carries the result, the raw input,
+  and the extracted domain. The raw input is PII and the listener author owns
+  it; the domain is not personal data.
+
+### Changed
+
+- The deny-log (0.2.1) moved from inline in the validator into a default
+  listener, `GuardDecisionLogListener` (same behaviour: logs denies as
+  `email_guard.denied`, domain only, key-independent). It is now one
+  subscriber on the event, replaceable or removable.
+- The validator constructor takes an event dispatcher instead of a logger.
+
+
 ## [0.2.2] - 2026-06-14
 
 ### Fixed

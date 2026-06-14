@@ -4,61 +4,65 @@ declare(strict_types=1);
 
 namespace Emailsherlock\EmailGuardBundle\Tests\Validator;
 
+use Emailsherlock\EmailGuardBundle\Event\GuardDecisionEvent;
 use Emailsherlock\EmailGuardBundle\Tests\Support\GuardFactoryBuilder;
 use Emailsherlock\EmailGuardBundle\Validator\VerifiedEmail;
 use Emailsherlock\EmailGuardBundle\Validator\VerifiedEmailValidator;
-use Psr\Log\AbstractLogger;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Validator\Test\ConstraintValidatorTestCase;
 
 final class VerifiedEmailValidatorTest extends ConstraintValidatorTestCase
 {
-    /** @var list<array{level: mixed, message: string|\Stringable, context: array<mixed>}> */
-    private array $logs = [];
+    /** @var list<GuardDecisionEvent> */
+    private array $events = [];
 
     protected function createValidator(): VerifiedEmailValidator
     {
-        $logger = new class($this->logs) extends AbstractLogger {
-            /** @param list<array<string, mixed>> $sink */
-            public function __construct(private array &$sink)
-            {
-            }
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(GuardDecisionEvent::class, function (GuardDecisionEvent $e): void {
+            $this->events[] = $e;
+        });
 
-            public function log($level, string|\Stringable $message, array $context = []): void
-            {
-                $this->sink[] = ['level' => $level, 'message' => $message, 'context' => $context];
-            }
-        };
-
-        return new VerifiedEmailValidator(GuardFactoryBuilder::build(), $logger);
+        return new VerifiedEmailValidator(GuardFactoryBuilder::build(), $dispatcher);
     }
 
-    public function testDeniedDecisionIsLoggedWithDomainOnlyNeverTheAddress(): void
+    public function testDispatchesAnEventForEveryDecision(): void
+    {
+        $this->validator->validate('jane@acme-corp.com', new VerifiedEmail());      // allow
+        $this->validator->validate('x@mailinator.com', new VerifiedEmail());        // deny
+
+        self::assertCount(2, $this->events);
+        self::assertSame('allow', $this->events[0]->result->action->value);
+        self::assertSame('deny', $this->events[1]->result->action->value);
+    }
+
+    public function testEventCarriesResultRawInputAndExtractedDomain(): void
     {
         $this->validator->validate('deleted+user274@deleted.invalid', new VerifiedEmail());
 
-        self::assertCount(1, $this->logs);
-        self::assertSame('email_guard.denied', (string) $this->logs[0]['message']);
-        $ctx = $this->logs[0]['context'];
-        self::assertSame('deleted.invalid', $ctx['domain']);
-        self::assertSame('invalid', $ctx['verdict']);
-        self::assertContains('reserved_tld', $ctx['reasons']);
-        self::assertSame('local', $ctx['source']);
-        // The local part / full address must never appear in the log.
-        self::assertStringNotContainsString('deleted+user274', json_encode($this->logs));
-        self::assertStringNotContainsString('@', json_encode($ctx));
+        self::assertCount(1, $this->events);
+        $event = $this->events[0];
+        self::assertSame('invalid', $event->result->verdict->value);
+        self::assertContains('reserved_tld', $event->result->reasons);
+        // input carries the raw address (PII, the listener's responsibility);
+        // domain is the extracted, non-PII part.
+        self::assertSame('deleted+user274@deleted.invalid', $event->input);
+        self::assertSame('deleted.invalid', $event->domain);
     }
 
-    public function testAllowedDecisionIsNotLogged(): void
+    public function testEventDomainIsNullOnSyntaxFailureWithoutAt(): void
     {
-        $this->validator->validate('jane@acme-corp.com', new VerifiedEmail());
+        $this->validator->validate('not-an-address', new VerifiedEmail());
 
-        self::assertSame([], $this->logs);
+        self::assertNull($this->events[0]->domain);
+        self::assertSame('not-an-address', $this->events[0]->input);
     }
 
     public function testNullIsSkipped(): void
     {
         $this->validator->validate(null, new VerifiedEmail());
         $this->assertNoViolation();
+        self::assertSame([], $this->events);
     }
 
     public function testEmptyStringIsSkipped(): void

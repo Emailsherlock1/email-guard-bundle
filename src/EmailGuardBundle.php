@@ -6,6 +6,8 @@ namespace Emailsherlock\EmailGuardBundle;
 
 use Emailsherlock\EmailGuard\EmailGuard;
 use Emailsherlock\EmailGuard\GuardReporter;
+use Emailsherlock\EmailGuardBundle\Event\GuardDecisionEvent;
+use Emailsherlock\EmailGuardBundle\EventListener\GuardDecisionLogListener;
 use Emailsherlock\EmailGuardBundle\EventListener\GuardTelemetryFlushListener;
 use Emailsherlock\EmailGuardBundle\Form\VerifyEmailTypeExtension;
 use Emailsherlock\EmailGuardBundle\Validator\VerifiedEmailValidator;
@@ -95,10 +97,14 @@ final class EmailGuardBundle extends AbstractBundle
         $services->alias(EmailGuard::class, 'email_guard.guard');
 
         $services->set('email_guard.validator.verified_email', VerifiedEmailValidator::class)
-            // Logger is optional (nullOnInvalid): the deny-log is a convenience
-            // for key-less visibility, never a hard dependency.
-            ->args([service('email_guard.factory'), service('logger')->nullOnInvalid()])
+            ->args([service('email_guard.factory'), service('event_dispatcher')->nullOnInvalid()])
             ->tag('validator.constraint_validator');
+
+        // Default listener: logs denies (domain only, key-independent). Just
+        // one subscriber on the event; integrators add their own or drop this.
+        $services->set('email_guard.event.decision_log_listener', GuardDecisionLogListener::class)
+            ->args([service('logger')->nullOnInvalid()])
+            ->tag('kernel.event_listener', ['event' => GuardDecisionEvent::class, 'method' => '__invoke']);
 
         if (class_exists(FormType::class)) {
             $services->set('email_guard.form.type_extension', VerifyEmailTypeExtension::class)

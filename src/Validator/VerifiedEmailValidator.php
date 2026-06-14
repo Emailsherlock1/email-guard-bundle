@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Emailsherlock\EmailGuardBundle\Validator;
 
-use Emailsherlock\EmailGuard\GuardDecisionSource;
+use Emailsherlock\EmailGuardBundle\Event\GuardDecisionEvent;
 use Emailsherlock\EmailGuardBundle\GuardFactory;
-use Psr\Log\LoggerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
@@ -16,7 +16,7 @@ final class VerifiedEmailValidator extends ConstraintValidator
 {
     public function __construct(
         private readonly GuardFactory $guards,
-        private readonly ?LoggerInterface $logger = null,
+        private readonly ?EventDispatcherInterface $dispatcher = null,
     ) {
     }
 
@@ -33,23 +33,17 @@ final class VerifiedEmailValidator extends ConstraintValidator
             throw new UnexpectedValueException($value, 'string');
         }
 
+        $address = (string) $value;
         $result = $this->guards
             ->create($constraint->blockOn, $constraint->reviewOn)
-            ->check((string) $value);
+            ->check($address);
+
+        // Hand every decision to whoever is listening (default: the deny-log
+        // listener). Listeners filter what they care about; the bundle never
+        // hard-wires what happens to a decision beyond the violation below.
+        $this->dispatcher?->dispatch(new GuardDecisionEvent($result, $address, $this->domainOf($address)));
 
         if ($result->isDenied()) {
-            // Key-independent visibility: log every block so operators can see
-            // what the guard filters even without telemetry configured (no API
-            // key). Domain only, never the address — same PII rule as the
-            // telemetry event. The reporter-based DB telemetry is the richer,
-            // key-gated path; this log always fires.
-            $this->logger?->info('email_guard.denied', [
-                'domain' => $this->domainOf((string) $value),
-                'verdict' => $result->verdict->value,
-                'reasons' => $result->reasons,
-                'source' => $result->apiCalled ? GuardDecisionSource::REMOTE : GuardDecisionSource::LOCAL,
-            ]);
-
             $this->context->buildViolation($constraint->message)
                 ->setParameter('{{ reasons }}', implode(', ', $result->reasons))
                 ->setCode(VerifiedEmail::DENIED_ERROR)
@@ -58,9 +52,8 @@ final class VerifiedEmailValidator extends ConstraintValidator
     }
 
     /**
-     * Domain part for logging: lowercased, null when there is no @ (syntax
-     * failure). A bare domain is not personal data; the local part is, and it
-     * never leaves this method.
+     * Domain part for the event: lowercased, null when there is no @ (syntax
+     * failure). Not personal data, unlike the local part.
      */
     private function domainOf(string $address): ?string
     {
