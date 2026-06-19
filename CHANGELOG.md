@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.1] - 2026-06-19
+
+### Changed
+
+- Require `emailsherlock/email-guard-core: ^0.3`, which adds the `relay` signal
+  (spec 1.2.0). `block_on` / `review_on` now accept `relay` alongside the
+  verdicts to deny or flag relay / forwarding / alias-masking senders (Apple
+  Hide My Email, SimpleLogin, addy.io, Cloudflare Email Routing). No bundle API
+  change: `block_on` / `review_on` already pass through to the core library.
+  (EM-1048)
+
 ## [0.3.0] - 2026-06-14
 
 ### Added
