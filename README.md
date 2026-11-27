@@ -38,6 +38,32 @@ email_guard:
 checks keep working and the rest passes. Your signup form never breaks
 because of our API.
 
+### Signals
+
+`block_on` and `review_on` also take signals. A signal is something the API
+reports next to the verdict rather than instead of it, so an address can be
+`valid` and still carry one. Each stays inert until you name it:
+
+```yaml
+email_guard:
+    block_on: ['invalid', 'disposable', 'relay']   # reject masked senders
+    review_on: ['spam_trap']                       # hold trap hosts for a look
+```
+
+- `relay`: a masked forwarder (Apple Hide My Email, SimpleLogin, Cloudflare
+  Email Routing). Deliverable, and it reaches a real person, just not under
+  this address.
+- `spam_trap`: the mail host is a known or suspected spam trap. It may well
+  accept the mail, which is the point: sending to a trap is what costs you
+  sender reputation. `$result->spamTrapType` says whether it came from a
+  curated registry (`known_trap_domain`) or a heuristic
+  (`reputation_heuristic`), which is why `review_on` is the safer list for it.
+
+A name this bundle's core library does not know is inert, never an error, so a
+config can name a signal before the install catches up. The flip side is that a
+typo behaves exactly the same way: `Signal::names()` lists what your installed
+version actually implements.
+
 ## Use
 
 As a form option, one line per field:
@@ -66,8 +92,8 @@ mail. Check it for typos."* Override per constraint via `message:`.
 
 ## Review flows
 
-`review_on` verdicts add no violation; validation is allow-or-deny by
-design. For a second gate (hold the signup, require confirmation), inject
+`review_on` adds no violation, for verdicts and signals alike; validation is
+allow-or-deny by design. For a second gate (hold the signup, require confirmation), inject
 the guard and read the result yourself:
 
 ```php

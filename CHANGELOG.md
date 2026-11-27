@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0] - 2026-11-27
+
+### Changed
+
+- Require `emailsherlock/email-guard-core: ^0.5`, which adds the `spam_trap`
+  signal (spec 1.5.0). `block_on` / `review_on` now accept `spam_trap` next to
+  `relay` and the verdicts, to deny or flag addresses whose mail host is a
+  known or suspected spam trap. `review_on` is the better list for it: one of
+  its two sources is a heuristic and can be wrong about a real mailbox.
+  (EM-2292)
+- No bundle API change. `block_on` / `review_on` have always passed through to
+  the core library, which is exactly why a `review_on: ['spam_trap']` written
+  before this release did nothing at all and said nothing about it. The version
+  requirement is the fix.
+- The step is from core `^0.4.2` (bundle 0.3.3) to `^0.5`. Core 0.4's
+  granular degraded reasons and 0.4.2's syntax fix already arrived with bundle
+  0.3.3. New from core 0.5 besides `spam_trap`: `Signal::names()`, and a
+  signal's detail field (`relayProvider`, `spamTrapType`) is now null unless
+  its own signal is true.
+
 ## [0.3.3] - 2026-11-27
 
 ### Fixed
