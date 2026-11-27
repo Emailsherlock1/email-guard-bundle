@@ -8,6 +8,7 @@ use Emailsherlock\EmailGuardBundle\Event\GuardDecisionEvent;
 use Emailsherlock\EmailGuardBundle\Tests\Support\GuardFactoryBuilder;
 use Emailsherlock\EmailGuardBundle\Validator\VerifiedEmail;
 use Emailsherlock\EmailGuardBundle\Validator\VerifiedEmailValidator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Validator\Test\ConstraintValidatorTestCase;
 
@@ -97,6 +98,30 @@ final class VerifiedEmailValidatorTest extends ConstraintValidatorTestCase
             ->setParameter('{{ reasons }}', 'bad_syntax')
             ->setCode(VerifiedEmail::DENIED_ERROR)
             ->assertRaised();
+    }
+
+    /**
+     * A line feed at the end of the local part or of a domain label passed
+     * the syntax check before email-guard-core 0.4.2 (EM-4971). The bundle
+     * requires ^0.4.2 for that fix, and this case fails on any older core.
+     */
+    #[DataProvider('lineFeedAtEndOfPartProvider')]
+    public function testLineFeedAtEndOfPartIsDenied(string $address): void
+    {
+        $constraint = new VerifiedEmail();
+        $this->validator->validate($address, $constraint);
+
+        $this->buildViolation($constraint->message)
+            ->setParameter('{{ reasons }}', 'bad_syntax')
+            ->setCode(VerifiedEmail::DENIED_ERROR)
+            ->assertRaised();
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function lineFeedAtEndOfPartProvider(): iterable
+    {
+        yield 'local part' => ["jane\n@acme-corp.com"];
+        yield 'domain label' => ["jane@acme-corp\n.com"];
     }
 
     public function testDisposableIsDenied(): void

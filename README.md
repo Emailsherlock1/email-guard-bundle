@@ -7,7 +7,7 @@ blocks junk email addresses at form submit, before they reach your database.
 every disposable address. This bundle adds the missing layer on top of
 [email-guard-core](https://github.com/Emailsherlock1/email-guard-core-php):
 syntax profile, reserved TLDs, 73k+ disposable domains, all checked locally
-with zero latency. An [EmailSherlock API key](https://emailsherlock.com/api/docs)
+with zero latency. An [EmailSherlock API key](https://www.hostsherlock.com/api/docs)
 adds live MX, SMTP probe, and a fresh disposable list.
 
 ## Install

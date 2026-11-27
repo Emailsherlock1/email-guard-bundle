@@ -1,11 +1,11 @@
 # Changelog
 
-## [0.4.0] - 2026-09-07
+## [0.4.0] - 2026-11-27
 
 ### Changed
 
 - Require `emailsherlock/email-guard-core: ^0.5`, which adds the `spam_trap`
-  signal (spec 1.4.0). `block_on` / `review_on` now accept `spam_trap` next to
+  signal (spec 1.5.0). `block_on` / `review_on` now accept `spam_trap` next to
   `relay` and the verdicts, to deny or flag addresses whose mail host is a
   known or suspected spam trap. `review_on` is the better list for it: one of
   its two sources is a heuristic and can be wrong about a real mailbox.
@@ -14,8 +14,31 @@
   the core library, which is exactly why a `review_on: ['spam_trap']` written
   before this release did nothing at all and said nothing about it. The version
   requirement is the fix.
-- The jump skips core 0.4 (granular degraded reasons, spec 1.3.0), which this
-  bundle never required and so never surfaced. It arrives with the same bump.
+- The step is from core `^0.4.2` (bundle 0.3.3) to `^0.5`. Core 0.4's
+  granular degraded reasons and 0.4.2's syntax fix already arrived with bundle
+  0.3.3. New from core 0.5 besides `spam_trap`: `Signal::names()`, and a
+  signal's detail field (`relayProvider`, `spamTrapType`) is now null unless
+  its own signal is true.
+
+## [0.3.3] - 2026-11-27
+
+### Fixed
+
+- Require `emailsherlock/email-guard-core: ^0.4.2`. The `^0.3` constraint
+  reads as `>=0.3.0 <0.4.0` under Composer's 0.x rule, so no core release
+  after 0.3.x ever reached a bundle install. With 0.4.2, the syntax check
+  rejects a line feed at the end of the local part or of a domain label
+  (`jane\n@example.com`, `jane@example\n.com`), which passed as valid before.
+  Core 0.4.0 also arrives: a failed API escalation now names its cause next to
+  `api_unavailable` (`api_timeout`, `api_unreachable`, `api_http_5xx`,
+  `api_http_4xx`, `api_bad_response`). No bundle API change. (EM-4975)
+
+## [0.3.2] - 2026-11-13
+
+### Changed
+
+- README links point at hostsherlock.com (the product site moved; the API host
+  `api.emailsherlock.com` is unchanged).
 
 ## [0.3.1] - 2026-06-19
 
