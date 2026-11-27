@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.3] - 2026-11-27
+
+### Fixed
+
+- Require `emailsherlock/email-guard-core: ^0.4.2`. The `^0.3` constraint
+  reads as `>=0.3.0 <0.4.0` under Composer's 0.x rule, so no core release
+  after 0.3.x ever reached a bundle install. With 0.4.2, the syntax check
+  rejects a line feed at the end of the local part or of a domain label
+  (`jane\n@example.com`, `jane@example\n.com`), which passed as valid before.
+  Core 0.4.0 also arrives: a failed API escalation now names its cause next to
+  `api_unavailable` (`api_timeout`, `api_unreachable`, `api_http_5xx`,
+  `api_http_4xx`, `api_bad_response`). No bundle API change. (EM-4975)
+
 ## [0.3.2] - 2026-11-13
 
 ### Changed
